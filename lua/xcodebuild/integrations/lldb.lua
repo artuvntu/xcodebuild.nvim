@@ -30,6 +30,30 @@ local config = require("xcodebuild.core.config").options.integrations.lldb
 local notifications = require("xcodebuild.broadcasting.notifications")
 local projectConfig = require("xcodebuild.project.config")
 
+local supportsConnectionArgument = nil
+
+---Checks if current Xcode version supports `lldb-dap --connection`.
+---@return boolean
+local function supports_connection_argument()
+  if supportsConnectionArgument ~= nil then
+    return supportsConnectionArgument
+  end
+
+  local response = util.shell("xcodebuild -version")
+  local majorVersion, minorVersion = response[1]:match("Xcode (%d+)%.(%d+)")
+
+  if not majorVersion then
+    supportsConnectionArgument = false
+    return supportsConnectionArgument
+  end
+
+  local major = tonumber(majorVersion)
+  local minor = tonumber(minorVersion)
+
+  supportsConnectionArgument = major > 26 or (major == 26 and minor >= 4)
+  return supportsConnectionArgument
+end
+
 ---Returns path to the built application.
 ---@return string
 local function get_program_path()
@@ -202,6 +226,14 @@ end
 ---Returns the `lldb` adapter configuration for `nvim-dap`.
 ---@return table
 function M.get_adapter()
+  local endpointArg = "--port"
+  local endpointValue = tostring(config.port)
+
+  if supports_connection_argument() then
+    endpointArg = "--connection"
+    endpointValue = string.format("listen://localhost:%s", config.port)
+  end
+
   return {
     type = "server",
     port = config.port,
@@ -209,8 +241,8 @@ function M.get_adapter()
       command = "xcrun",
       args = {
         "lldb-dap",
-        "--port",
-        config.port,
+        endpointArg,
+        endpointValue,
       },
     },
   }
