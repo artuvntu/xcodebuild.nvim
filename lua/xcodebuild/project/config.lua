@@ -237,6 +237,7 @@ function M.update_settings(opts, callback)
       M.settings.projectFile,
       M.settings.scheme,
       M.settings.xcodeproj,
+      xcode.get_configured_derived_data_path(M.settings.workingDirectory),
       function(buildSettings)
         M.settings.appPath = buildSettings.appPath
         M.settings.productName = buildSettings.productName

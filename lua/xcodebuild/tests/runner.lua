@@ -93,6 +93,9 @@ function M.reload_tests()
       projectFile = projectConfig.settings.projectFile,
       scheme = projectConfig.settings.scheme,
       testPlan = projectConfig.settings.testPlan,
+      derivedDataPath = xcode.get_configured_derived_data_path(
+        projectConfig.settings.workingDirectory
+      ),
       extraTestArgs = config.commands.extra_test_args,
     }, function(tests)
       -- workaround sometimes after cancel enumerate tests returns 0 code
@@ -234,6 +237,9 @@ function M.run_tests(testsToRun)
       scheme = projectConfig.settings.scheme,
       testPlan = projectConfig.settings.testPlan,
       testsToRun = testsToRun,
+      derivedDataPath = xcode.get_configured_derived_data_path(
+        projectConfig.settings.workingDirectory
+      ),
       extraTestArgs = config.commands.extra_test_args,
     })
   end)

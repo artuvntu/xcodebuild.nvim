@@ -29,6 +29,7 @@
 ---@field projectFile string|nil
 ---@field scheme string
 ---@field destination string
+---@field derivedDataPath string|nil
 ---@field extraBuildArgs string[]
 ---@field on_stdout function
 ---@field on_stderr fun(_, output: string[], _)
@@ -42,6 +43,7 @@
 ---@field destination string
 ---@field testPlan string|nil
 ---@field testsToRun string[]|nil
+---@field derivedDataPath string|nil
 ---@field extraTestArgs string[]
 ---@field on_stdout function
 ---@field on_stderr fun(_, output: string[], _)
@@ -53,6 +55,7 @@
 ---@field scheme string
 ---@field destination string
 ---@field testPlan string
+---@field derivedDataPath string|nil
 ---@field extraTestArgs string[]
 
 ---@class XcodeBuildSettings
@@ -122,11 +125,40 @@ local function get_project_param(projectFile)
   return util.has_suffix(projectFile, "xcodeproj") and "-project" or "-workspace"
 end
 
+---@param path string|nil
+---@param workingDirectory string|nil
+---@return string|nil
+function M.resolve_derived_data_path(path, workingDirectory)
+  if not path or path == "" then
+    return nil
+  end
+
+  local expandedPath = vim.fn.expand(path)
+  if vim.startswith(expandedPath, "/") then
+    return expandedPath:gsub("/+$", "")
+  end
+
+  local root = workingDirectory or vim.fn.getcwd()
+  return (root .. "/" .. expandedPath):gsub("/+$", "")
+end
+
+---@param workingDirectory string|nil
+---@return string|nil
+function M.get_configured_derived_data_path(workingDirectory)
+  local path = require("xcodebuild.core.config").options.commands.derived_data_path
+  return M.resolve_derived_data_path(path, workingDirectory)
+end
+
 ---Returns derived data path for Swift Package {productName} that matches the {workingDirectory}.
 ---@param productName string
 ---@param workingDirectory string
 ---@return string|nil
 function M.find_derived_data_path(productName, workingDirectory)
+  local configuredPath = M.get_configured_derived_data_path(workingDirectory)
+  if configuredPath then
+    return util.dir_exists(configuredPath) and configuredPath or nil
+  end
+
   local derivedDataDir = vim.fn.expand("~/Library/Developer/Xcode/DerivedData")
   -- stylua: ignore
   local cmd = {
@@ -482,6 +514,8 @@ function M.build_project(opts)
     "xcodebuild",
     opts.clean and "clean" or nil,
     opts.buildForTesting and "build-for-testing" or "build",
+    opts.derivedDataPath and "-derivedDataPath" or nil,
+    opts.derivedDataPath,
     get_project_param(opts.projectFile),
     opts.projectFile,
     "-scheme",
@@ -513,9 +547,10 @@ end
 ---@param projectFile string
 ---@param scheme string
 ---@param xcodeprojPath string
+---@param derivedDataPath string|nil
 ---@param callback fun(settings: XcodeBuildSettings)
 ---@return number|nil # job id
-function M.get_build_settings(platform, projectFile, scheme, xcodeprojPath, callback)
+function M.get_build_settings(platform, projectFile, scheme, xcodeprojPath, derivedDataPath, callback)
   local sdk = constants.get_sdk(platform)
 
   local jobid
@@ -527,6 +562,8 @@ function M.get_build_settings(platform, projectFile, scheme, xcodeprojPath, call
       projectFile,
       "-scheme",
       scheme,
+      derivedDataPath and "-derivedDataPath" or nil,
+      derivedDataPath,
       "-showBuildSettings",
       "-sdk",
       sdk,
@@ -937,6 +974,8 @@ function M.enumerate_tests(opts, callback)
     opts.scheme,
     "-destination",
     "id=" .. opts.destination,
+    opts.derivedDataPath and "-derivedDataPath" or nil,
+    opts.derivedDataPath,
     get_project_param(opts.projectFile),
     opts.projectFile,
     opts.testPlan and "-testPlan" or nil,
@@ -1013,6 +1052,8 @@ function M.run_tests(opts)
     opts.scheme,
     "-destination",
     "id=" .. opts.destination,
+    opts.derivedDataPath and "-derivedDataPath" or nil,
+    opts.derivedDataPath,
     get_project_param(opts.projectFile),
     opts.projectFile,
     opts.testPlan and "-testPlan" or nil,

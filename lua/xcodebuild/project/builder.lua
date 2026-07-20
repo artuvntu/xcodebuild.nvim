@@ -129,6 +129,9 @@ function M.build_project(opts, callback)
     destination = projectConfig.settings.destination,
     projectFile = projectConfig.settings.projectFile,
     scheme = projectConfig.settings.scheme,
+    derivedDataPath = xcode.get_configured_derived_data_path(
+      projectConfig.settings.workingDirectory
+    ),
     extraBuildArgs = config.commands.extra_build_args,
   })
 end
@@ -138,12 +141,16 @@ end
 function M.clean_derived_data()
   local derivedDataPath
 
-  if projectConfig.settings.buildDir then
+  derivedDataPath = require("xcodebuild.core.xcode").get_configured_derived_data_path(
+    projectConfig.settings.workingDirectory
+  )
+
+  if not derivedDataPath and projectConfig.settings.buildDir then
     local buildDir = projectConfig.settings.buildDir or ""
     derivedDataPath = string.match(buildDir, "(.+/DerivedData/[^/]+)/.+") or buildDir
-  elseif projectConfig.settings.appPath then
+  elseif not derivedDataPath and projectConfig.settings.appPath then
     derivedDataPath = string.match(projectConfig.settings.appPath, "(.+/DerivedData/[^/]+)/.+")
-  else
+  elseif not derivedDataPath then
     derivedDataPath = require("xcodebuild.core.xcode").find_derived_data_path(
       projectConfig.settings.scheme,
       projectConfig.settings.workingDirectory
@@ -197,6 +204,9 @@ function M.build_project_for_preview(callback)
     destination = projectConfig.settings.destination,
     projectFile = projectConfig.settings.projectFile,
     scheme = projectConfig.settings.scheme,
+    derivedDataPath = xcode.get_configured_derived_data_path(
+      projectConfig.settings.workingDirectory
+    ),
     extraBuildArgs = config.commands.extra_build_args,
   })
 end

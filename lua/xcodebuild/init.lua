@@ -117,6 +117,7 @@ end
 ---  commands = {
 ---    extra_build_args = { "-parallelizeTargets" }, -- extra arguments for `xcodebuild build`
 ---    extra_test_args = { "-parallelizeTargets" }, -- extra arguments for `xcodebuild test`
+---    derived_data_path = nil, -- custom DerivedData path, absolute or relative to project root
 ---    project_search_max_depth = 3, -- maxdepth of xcodeproj/xcworkspace search while using configuration wizard
 ---    focus_simulator_on_app_launch = true, -- focus simulator window when app is launched
 ---    keep_device_cache = false, -- keep device cache even if scheme or project file changes

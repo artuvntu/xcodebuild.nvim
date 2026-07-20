@@ -173,12 +173,15 @@ function M.load_targets_map()
   local projectConfig = require("xcodebuild.project.config")
 
   if projectConfig.is_spm_configured() then
-    local derivedDataPath = projectConfig.settings.buildDir
+    local derivedDataPath = xcode.get_configured_derived_data_path(projectConfig.settings.workingDirectory)
+      or projectConfig.settings.buildDir
       or xcode.find_derived_data_path(projectConfig.settings.scheme, projectConfig.settings.workingDirectory)
 
     M.targetsFilesMap = derivedDataPath and xcode.get_targets_filemap(derivedDataPath) or {}
   else
-    M.targetsFilesMap = xcode.get_targets_filemap(projectConfig.settings.appPath)
+    local derivedDataPath = xcode.get_configured_derived_data_path(projectConfig.settings.workingDirectory)
+      or projectConfig.settings.appPath
+    M.targetsFilesMap = xcode.get_targets_filemap(derivedDataPath)
   end
 end
 

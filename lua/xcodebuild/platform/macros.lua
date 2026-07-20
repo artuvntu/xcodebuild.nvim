@@ -273,6 +273,13 @@ end
 ---Finds the DerivedData path for the current project.
 ---@return string|nil
 local function find_project_derived_data()
+  local configuredPath = require("xcodebuild.core.xcode").get_configured_derived_data_path(
+    projectConfig.settings.workingDirectory
+  )
+  if configuredPath and util.dir_exists(configuredPath) then
+    return configuredPath
+  end
+
   local buildDir = projectConfig.settings.buildDir
 
   if buildDir then
